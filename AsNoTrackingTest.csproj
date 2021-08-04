@@ -6,12 +6,13 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="BenchmarkDotNet" Version="0.13.0" />
       <PackageReference Include="Microsoft.EntityFrameworkCore" Version="5.0.8" />
       <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="5.0.8" />
     </ItemGroup>
 
     <ItemGroup>
-      <None Update="Northwind_small.sqlite">
+      <None Update="northwind.db">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
     </ItemGroup>

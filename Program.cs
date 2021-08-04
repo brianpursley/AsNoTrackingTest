@@ -1,31 +1,91 @@
-﻿using System;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
+﻿using System.Linq;
+using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Running;
 using Microsoft.EntityFrameworkCore;
 
 namespace AsNoTrackingTest
 {
-    class Program
+    public class Program
     {
-        static void Main(string[] args)
+        
+        [Benchmark]
+        public void Tracking_OneRow()
         {
-            var useAsNoTracking = bool.Parse(args[0]);
-            var iterations = int.Parse(args[1]);
-            Console.WriteLine($"useAsNoTracking = {useAsNoTracking}, iterations = {iterations}");
-            
             using var db = new NorthwindDbContext();
-            for (var i = 0; i < iterations; i++)
-            {
-                if (useAsNoTracking)
-                {
-                    db.Customers.AsNoTracking().ToList();
-                }
-                else
-                {
-                    db.Customers.ToList();
-                }
-            }
+            db.Customers.Take(1).ToList();
         }
+        
+        [Benchmark]
+        public void NoTracking_OneRow()
+        {
+            using var db = new NorthwindDbContext();
+            db.Customers.Take(1).AsNoTracking().ToList();
+        }
+        
+        [Benchmark]
+        public void Tracking_OneRow_Twice()
+        {
+            using var db = new NorthwindDbContext();
+            db.Customers.Take(1).ToList();
+            db.Customers.Take(1).ToList();
+        }
+        
+        [Benchmark]
+        public void NoTracking_OneRow_Twice()
+        {
+            using var db = new NorthwindDbContext();
+            db.Customers.Take(1).AsNoTracking().ToList();
+            db.Customers.Take(1).AsNoTracking().ToList();
+        }
+        
+        [Benchmark]
+        public void Tracking_AllRows()
+        {
+            using var db = new NorthwindDbContext();
+            db.Customers.ToList();
+        }
+        
+        [Benchmark]
+        public void NoTracking_AllRows()
+        {
+            using var db = new NorthwindDbContext();
+            db.Customers.AsNoTracking().ToList();
+        }
+        
+        [Benchmark]
+        public void Tracking_AllRows_Twice()
+        {
+            using var db = new NorthwindDbContext();
+            db.Customers.ToList();
+            db.Customers.ToList();
+        }
+        
+        [Benchmark]
+        public void NoTracking_AllRows_Twice()
+        {
+            using var db = new NorthwindDbContext();
+            db.Customers.AsNoTracking().ToList();
+            db.Customers.AsNoTracking().ToList();
+        }
+
+        [Benchmark]
+        public void Tracking_Disjoint()
+        {
+            using var db = new NorthwindDbContext();
+            db.Customers.Take(40).ToList();
+            db.Customers.Skip(40).ToList();
+        }
+        
+        [Benchmark]
+        public void NoTracking_Disjoint()
+        {
+            using var db = new NorthwindDbContext();
+            db.Customers.Take(40).AsNoTracking().ToList();
+            db.Customers.Skip(40).AsNoTracking().ToList();
+        }
+
+        static void Main(string[] args)
+            => BenchmarkRunner.Run<Program>();
     }
 
     class NorthwindDbContext : DbContext
@@ -33,14 +93,13 @@ namespace AsNoTrackingTest
         public DbSet<Customer> Customers { get; set; }
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         { 
-            optionsBuilder.UseSqlite("Data Source=./Northwind_small.sqlite");
+            optionsBuilder.UseSqlite("Data Source=northwind.db");
         }
     }
 
-    [Table("Customer")]
-    class Customer
+    public class Customer
     {
-        public string Id { get; set; }
+        public string CustomerId { get; set; }
         public string CompanyName { get; set; }
         public string ContactName { get; set; }
         public string ContactTitle { get; set; }
